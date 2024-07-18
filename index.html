@@ -39,12 +39,18 @@
   <!-- This script adds the flutter initialization JS code -->
   <script src="./flutter.js" defer></script>
   <script type="module" src="./assets/packages/flutter_3d_controller/assets/model-viewer.min.js" defer></script>
-</head>
-<body>
   <script>
+    function fetchModel(url, elementId) {
+      fetch(url, { mode: 'no-cors' })
+        .then(response => response.blob())
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          document.getElementById(elementId).src = url;
+        })
+        .catch(console.error);
+    }
 
     window.addEventListener('load', function(ev) {
-      // Download main.dart.js
       _flutter.loader.loadEntrypoint({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,
@@ -55,7 +61,13 @@
           });
         }
       });
+
+      // Example usage: Replace 'model-viewer-element-id' with the actual ID of your model-viewer element
+      fetchModel('http://thedevportfolio.infinityfreeapp.com/assets/_animation1.glb', 'model-viewer-element-id');
     });
   </script>
+</head>
+<body>
+  <model-viewer id="model-viewer-element-id" ...otherAttributes></model-viewer>
 </body>
 </html>
