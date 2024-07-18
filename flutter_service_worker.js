@@ -135,8 +135,10 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== 'GET') {
     return;
   }
-  var origin = self.location.origin;
-  var key = event.request.url.substring(origin.length + 1);
+
+  const origin = self.location.origin;
+  let key = event.request.url.substring(origin.length + 1);
+
   // Redirect URLs to the index.html
   if (key.indexOf('?v=') != -1) {
     key = key.split('?v=')[0];
@@ -144,20 +146,28 @@ self.addEventListener("fetch", (event) => {
   if (event.request.url == origin || event.request.url.startsWith(origin + '/#') || key == '') {
     key = '/';
   }
-  // If the URL is not the RESOURCE list then return to signal that the
-  // browser should take over.
+
+  // Use a CORS proxy for specific assets
+  if (key.endsWith('.glb')) {
+    const corsProxyUrl = 'https://cors-anywhere.herokuapp.com/' + event.request.url;
+    event.respondWith(fetch(corsProxyUrl));
+    return;
+  }
+
+  // If the URL is not the RESOURCE list then return to signal that the browser should take over.
   if (!RESOURCES[key]) {
     return;
   }
+
   // If the URL is the index.html, perform an online-first request.
   if (key == '/') {
     return onlineFirst(event);
   }
+
   event.respondWith(caches.open(CACHE_NAME)
-    .then((cache) =>  {
+    .then((cache) => {
       return cache.match(event.request).then((response) => {
-        // Either respond with the cached resource, or perform a fetch and
-        // lazily populate the cache only if the resource was successfully fetched.
+        // Either respond with the cached resource, or perform a fetch and lazily populate the cache only if the resource was successfully fetched.
         return response || fetch(event.request).then((response) => {
           if (response && Boolean(response.ok)) {
             cache.put(event.request, response.clone());
@@ -168,6 +178,7 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
 self.addEventListener('message', (event) => {
   // SkipWaiting can be used to immediately activate a waiting service worker.
   // This will also require a page refresh triggered by the main worker.
